@@ -1,0 +1,1307 @@
+// use 7 micro step
+
+// Based on Tmcm-6214-PigonHole-20200828.tmc without lock & unlock
+// added tumbler for demo
+
+//stallGuardValue = 3  		        	//-64 = highest sensitivity ... 63 = lowest sensitivity
+//stallGuardValue = 1  		        	//-64 = highest sensitivity ... 63 = lowest sensitivity
+stallGuardValue = 5
+//vmax = 25119	    					//max. speed (0 ... 2047)
+//amax = 25030		    				//max. acceleration (0 ... 2047)
+//cmax = 129  			    			//max. current (0 ... 255)
+//cmax = 50  			    			//max. current (0 ... 255)
+
+vmax = 400	    					//max. speed (0 ... 2047)
+amax = 400		    				//max. acceleration (0 ... 2047)
+//stall = 25890
+// stall : 55890 behalf as disable the stallGuard2
+//stall = 55890
+//stall = 20000
+stall = 23000
+//cmax = 72  			    			//max. current (0 ... 255)
+cmax = 200  			    			//max. current (0 ... 255)
+
+//openPosition = 25500                    // Position of Open
+//openPosition = 12750                    // Position of Open   microstep=7
+openPosition = 12850                    // Position of Open   microstep=7
+
+//cUnlock = 60                            //standby current
+//cUnlock = 56                            //standby current
+cUnlock = 0                             //standby current
+
+// *** Initialization / Set up axis parameter *** //
+          //SAP 1, 0, 0                   //reset actual position to 0
+          //SAP 209, 0, 0                 //set Encoder position [µsteps]
+          //SAP 4, 0, vmax                //set max. positioning speed
+          //SAP 5, 0, amax                //set max. acceleration
+          //SAP 6, 0, 100
+          //SAP 7, 0, cUnlock             // Set standby current
+          
+          //SAP 19, 0, 5000               //set Velocity VSTART [pps], cannot set it to 20000 because it will lead stall and then stop
+          //SAP 20, 0, 8000               //set Velocity VSTOP [pps], also VSTART, VSTOP two high will lead the drinks shock
+
+          
+// *** stallGuard™ initialization *** //
+          //SAP 173, 0, 1                 //set stallGuard™ filter enable
+          //SAP 174, 0, stallGuardValue   //stallGuard™ threshold
+          ////SAP 181, 0, 11800             //min. speed for motor to be stopped by stallGuard™
+          //SAP 181, 0, 20000
+          //// SIO 0, 0, 3                   //set All pull-up resistors on.   *** not supported for 6214
+          //GIO 1, 0
+// set stall user variable to 0
+//  SGP 1, 2, 0
+
+// 6214 12v motor setting
+//SAP 169, 0, 0 // smartEnergy current down step
+//SAP 171, 0, 0 // smartEnergy current up step
+//SAP 182, 0, 15 // smartEnergy threshold speed
+//SAP 173, 0, 1 // stallGuard2 filter enable
+//SAP 6, 0, 40 // Maximum current
+//SAP 7, 0, 16 // Standby current
+//SAP 174, 0, 2 // stallGuard2 threshold
+//SAP 181, 0, 25890 // stop-on-stall velocity
+//SAP 172, 0, 0 // smartEnergy hysteresis start
+//SAP 168, 0, 0 // smartEnergy current minimum (SEIMIN)
+//SAP 170, 0, 0 // smartEnergy hysteresis
+// 6214 12v motor setting
+
+// TMCL 6214
+// user variables interface with port outside
+door1 = 0
+door2 = 1
+door3 = 2
+door4 = 3
+door5 = 4
+door6 = 5
+
+// reset all door 
+SGP door1, 2, 0
+SGP door2, 2, 0
+SGP door3, 2, 0
+SGP door4, 2, 0
+SGP door5, 2, 0
+SGP door6, 2, 0
+
+stall1 = 10
+stall2 = 11
+stall3 = 12
+stall4 = 13
+stall5 = 14
+stall6 = 15
+
+curDoor = 100
+SGP curDoor, 2, 0
+
+curAction = 101
+nextAction = 102
+
+sensor = 103
+
+//openPosition = 104
+//SGP openPosition, 2, 25500
+
+//closePosition = 105
+//SGP closePosition, 2, 0
+
+targetPosition = 106
+
+Stall1Ref = 107
+// bug fix 20200828 : Stall1Ref should start from 108
+//SGP Stall1Ref, 2, 107
+SGP Stall1Ref, 2, 108
+SGP 108, 2, 0
+SGP 109, 2, 0
+SGP 110, 2, 0
+SGP 111, 2, 0
+SGP 112, 2, 0
+SGP 113, 2, 0
+
+SearchVelocity = 10000
+//adjustPosition = 12000
+//adjustPosition = 22000
+adjustPosition = -14300
+//adjustPosition = 0
+
+// -- add version : individual_homing_adjust
+Adjust1Ref = 120
+SGP Adjust1Ref, 2, 121
+
+// six switchs adjustment
+SGP 121, 2, -19700
+SGP 122, 2, -14000
+SGP 123, 2, -16500
+SGP 124, 2, -16250
+SGP 125, 2, -19000
+SGP 126, 2, -19650
+
+// -- end version : individual_homing_adjust
+
+//SearchVelocity = 108
+//SGP SearchVelocity, 2, 10000
+
+//adjustPosition = 109
+//SGP adjustPosition, 2, 12000
+
+// 6 motors setup
+// original parameter of 15 and 16 are
+//SAP 15, 0, 25612
+//SAP 16, 0, 25600
+
+//SAP 4, ?, 15000   // vmax
+//SAP 5, ?, 14500   // amax
+
+SAP 4, 0, 300    // vmax
+SAP 5, 0, 200    // amax
+SAP 173, 0, 1     // stallGuard2 filter enable
+SAP 6, 0, cmax    // Maximum current
+SAP 7, 0, cUnlock      // Standby current
+// for new version 2
+SAP 174, 0, 12     // stallGuard2 threshold
+SAP 181, 0, 298 // stop-on-stall velocity
+SAP 140, 0, 7
+// for lock
+// for previous slow relay
+//SAP 15, 0, 200
+//SAP 16, 0, 235
+//
+//SAP 15, 0, 10000
+//SAP 16, 0, 13500
+
+SAP 4, 1, 300   // vmax
+SAP 5, 1, 200   // amax
+SAP 173, 1, 1     // stallGuard2 filter enable
+SAP 6, 1, cmax      // Maximum current
+SAP 7, 1, cUnlock // Standby current
+SAP 174, 1, 12     // stallGuard2 threshold
+SAP 181, 1, 298 // stop-on-stall velocity
+SAP 140, 1, 7
+// for lock
+//
+//SAP 15, 1, 10000
+//SAP 16, 1, 13500
+
+SAP 4, 2, 300   // vmax
+SAP 5, 2, 200   // amax
+SAP 173, 2, 1     // stallGuard2 filter enable
+SAP 6, 2, cmax      // Maximum current
+SAP 7, 2, cUnlock // Standby current
+SAP 174, 2, 12     // stallGuard2 threshold
+SAP 181, 2, 298 // stop-on-stall velocity
+SAP 140, 2, 7
+// for lock
+//
+//SAP 15, 2, 10000
+//SAP 16, 2, 13500
+
+SAP 4, 3, 300   // vmax
+SAP 5, 3, 200   // amax
+SAP 173, 3, 1     // stallGuard2 filter enable
+SAP 6, 3, cmax      // Maximum current
+SAP 7, 3, cUnlock // Standby current
+SAP 174, 3, 12     // stallGuard2 threshold
+SAP 181, 3, 298 // stop-on-stall velocity
+SAP 140, 3, 7
+// for lock
+//
+//SAP 15, 3, 10000
+//SAP 16, 3, 13500
+
+SAP 4, 4, 300   // vmax
+SAP 5, 4, 200   // amax
+SAP 173, 4, 1     // stallGuard2 filter enable
+SAP 6, 4, cmax      // Maximum current
+SAP 7, 4, cUnlock // Standby current
+SAP 174, 4, 12     // stallGuard2 threshold
+SAP 181, 4, 298 // stop-on-stall velocity
+SAP 140, 4, 7
+// for lock
+//
+//SAP 15, 4, 10000
+//SAP 16, 4, 13500
+
+SAP 4, 5, 300   // vmax
+SAP 5, 5, 200   // amax
+SAP 173, 5, 1     // stallGuard2 filter enable
+SAP 6, 5, cmax      // Maximum current
+SAP 7, 5, cUnlock // Standby current
+SAP 174, 5, 12     // stallGuard2 threshold
+SAP 181, 5, 298 // stop-on-stall velocity
+SAP 140, 5, 7
+// for lock
+//
+//SAP 15, 5, 10000
+//SAP 16, 5, 13500
+
+GAP 207, 0
+GAP 207, 1
+GAP 207, 2
+GAP 207, 3
+GAP 207, 4
+GAP 207, 5
+Loop:
+  // get global user variable for 6 motors command set by caller outside, after done the variable will become 9
+  
+  CSUB Sub_GetCurAction
+  
+  GAPX 207
+  // check have any stall error
+  COMP 1
+    JC EQ, StallHandle
+    StallHandleDone:
+
+  GGP curAction, 2
+  COMP 0
+    JC EQ, ActionDone
+    //JC EQ, ChkDoorAlignment
+  COMP 9
+    JC EQ, ActionDone
+    //JC EQ, ChkDoorAlignment
+  COMP 1
+    JC EQ, Open
+  COMP 13
+    JC EQ, OpenRetry
+  COMP 6
+    JC EQ, ChkOpenDoorArrived
+  COMP 7
+    JC EQ, ChkCloseDoorArrived
+  COMP 8
+    JC EQ, ChkSearchHomeArrived
+  COMP 4
+    JC EQ, ChkSearchAdjustArrived
+  // less use commands
+  COMP 2
+    JC EQ, Close
+    //JC EQ, CloseBySwitch
+  COMP 3
+    JC EQ, SearchHome
+  COMP 5
+    JC EQ, Lock
+  COMP 10
+    JC EQ, OpenTumbler
+  COMP 11
+    JC EQ, ChkOpenDoorArrivedForTumbler
+  // Check switch & sensor
+  COMP 12
+    JC EQ, ChkBeforeRelease
+  
+
+  ActionDone:
+  
+  // next loop
+  CALCV COMP, curDoor, 5
+  JC EQ, LoopReset
+  CALCV ADD, curDoor, 1
+  JA Loop
+
+  // Labels inside main Loop ///////////////////////////////////////////////////////////////////////
+  LoopReset:
+    SGP curDoor, 2, 0
+    JA Loop
+
+  StallHandle:               // 1, open door, 2. search home 3. check sensor 4. close door
+    WAIT TICKS, 0, 50
+
+    // open the door
+	SGP curAction, 2, 1      // whatever the door action is open or close, set it to open first
+    CSUB Sub_SetStall
+	
+    JA StallHandleDone
+
+Open:
+  CSUB Sub_GetCurSensor
+  COMP 1  // delivery without cup
+  JC EQ, WaitCup
+  CSUB Sub_ResetWaitCup
+  JA OpenTurnMotor
+
+  //// no acceleration for 6110
+  ////SAPX 15, 10000
+  ////SAPX 16, 13500
+  //CSUB Sub_Unlock
+  //
+  //CALC LOAD, openPosition    // prepare open Position
+  //MVPXA ABS
+  //
+  //SGP nextAction, 2, 6
+  //JA SetNextAction
+
+WaitCup:
+  CSUB Sub_SetWaitCup
+  SGP nextAction, 2, 13
+  JA SetNextAction
+  
+OpenRetry:
+  CSUB Sub_GetCurSensor
+  COMP 1  // delivery without cup
+  JC EQ, ActionDone
+  WAIT TICKS, 0, 300
+  JA OpenTurnMotor
+
+OpenTurnMotor:
+  //SAPX 15, 10000
+  //SAPX 16, 13500
+  CSUB Sub_Unlock
+
+  CALC LOAD, openPosition    // prepare open Position
+  MVPXA ABS
+
+  SGP nextAction, 2, 6
+  JA SetNextAction
+
+ChkOpenDoorArrived:
+  // get the door target position
+  GAPX 0
+  CALCVA LOAD, targetPosition
+  // check the door arrived or not
+  GAPX 1   // get actual position
+  //COMP openPosition
+  CALCVA COMP, targetPosition
+    //JC EQ, ChkSensorTest
+    //JC EQ, ChkSensor
+    JC EQ, ChkSensor_GIO
+    JA ActionDone
+    
+  ChkSensorTest:
+    CSUB Sub_Lock
+
+    //WAIT TICKS, 0, 200
+    WAIT TICKS, 0, 100
+    JA ChkStallBefore
+
+  //ChkSensor:
+  //  CSUB Sub_Lock
+  //
+  //  //GGP curDoor, 2
+  //  GAPX 10
+  //  COMP 1
+  //  JC EQ, ChkStallBefore
+  //  JA ActionDone
+
+  // door : 1,2,3,4,5,6 map to physical IN : 1,2,3,5,6,7
+  ChkSensor_GIO:
+    // check open switch : begin
+	// give it time to detech the switch
+	WAIT TICKS, 0, 50
+    CALCXV LOAD, curDoor
+    GAPX 10
+	
+    // COMP 0 , limit switch: 0, SAP bean switch: 1
+	COMP 1 //v0: COMP 0
+	
+	// SAP : use homing instead of search open switch
+    //JC EQ, OpenBySwitch
+	JC EQ, OpenByHoming
+	
+    // check open switch : end
+    
+    CSUB Sub_Lock
+    GGP curDoor, 2
+    COMP 0
+      JC EQ, Get_DoorSensor0
+    COMP 1
+      JC EQ, Get_DoorSensor1
+    COMP 2
+      JC EQ, Get_DoorSensor2
+    COMP 3
+      JC EQ, Get_DoorSensor3
+    COMP 4
+      JC EQ, Get_DoorSensor4
+    COMP 5
+      JC EQ, Get_DoorSensor5
+    Get_DoorSensorDone:
+    COMP 1
+    //JC EQ, Close
+    JC EQ, ChkStallBefore
+    JA ActionDone
+    
+    Get_DoorSensor0:
+      GIO 1, 0
+      JA Get_DoorSensorDone
+    Get_DoorSensor1:
+      GIO 2, 0
+      JA Get_DoorSensorDone
+    Get_DoorSensor2:
+      GIO 3, 0
+      JA Get_DoorSensorDone
+    Get_DoorSensor3:
+      GIO 5, 0
+      JA Get_DoorSensorDone
+    Get_DoorSensor4:
+      GIO 6, 0
+      JA Get_DoorSensorDone
+    Get_DoorSensor5:
+      GIO 7, 0
+      JA Get_DoorSensorDone
+      
+    ChkStallBefore:
+      CSUB Sub_GetStall
+      COMP 0
+      JC EQ, Close
+      //JC EQ, CloseBySwitch
+      COMP 1
+      JC EQ, SearchHome
+      
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	OpenByHoming:
+      SGP nextAction, 2, 3
+      JA SetNextAction
+	
+    OpenBySwitch:
+      CSUB Sub_Unlock
+
+      CALCXV LOAD, curDoor
+      CALC LOAD, 50000              // load the speed and turn
+      MVPXA REL
+
+      // set interrupt : begin
+      GGP curDoor, 2
+      COMP 0
+      JC EQ, OpenStop0
+      COMP 1
+      JC EQ, OpenStop1
+      COMP 2
+      JC EQ, OpenStop2
+      COMP 3
+      JC EQ, OpenStop3
+      COMP 4
+      JC EQ, OpenStop4
+      COMP 5
+      JC EQ, OpenStop5
+      OpenStopDone:
+
+      //SGP nextAction, 2, 7
+      //JA SetNextAction
+      CSUB Sub_SetStall
+      JA ActionDone
+      
+      OpenStop0:
+        VECT 28, OpenPosArrived0
+        SGP 28, 3, 2   // set trigger logic
+        EI 28
+        EI 255
+        JA OpenStopDone
+      OpenStop1:
+        VECT 30, OpenPosArrived1
+        SGP 30, 3, 2   // set trigger logic
+        EI 30
+        EI 255
+        JA OpenStopDone
+      OpenStop2:
+        VECT 32, OpenPosArrived2
+        SGP 32, 3, 2   // set trigger logic
+        EI 32
+        EI 255
+        JA OpenStopDone
+      OpenStop3:
+        VECT 34, OpenPosArrived3
+        SGP 34, 3, 2   // set trigger logic
+        EI 34
+        EI 255
+        JA OpenStopDone
+      OpenStop4:
+        VECT 36, OpenPosArrived4
+        SGP 36, 3, 2   // set trigger logic
+        EI 36
+        EI 255
+        JA OpenStopDone
+      OpenStop5:
+        VECT 38, OpenPosArrived5
+        SGP 38, 3, 2   // set trigger logic
+        EI 38
+        EI 255
+        JA OpenStopDone
+
+      OpenPosArrived0:
+        SAP 0, 0, openPosition    //set Target position
+        SAP 1, 0, openPosition    //set Actual position
+		MVP REL, 0, 700
+        DI 28
+        RETI
+      OpenPosArrived1:
+        SAP 0, 1, openPosition    //set Target position
+        SAP 1, 1, openPosition    //set Actual position
+		MVP REL, 1, 700
+        DI 30
+        RETI
+      OpenPosArrived2:
+        SAP 0, 2, openPosition    //set Target position
+        SAP 1, 2, openPosition    //set Actual position
+		MVP REL, 2, 700
+        DI 32
+        RETI
+      OpenPosArrived3:
+        SAP 0, 3, openPosition    //set Target position
+        SAP 1, 3, openPosition    //set Actual position
+		MVP REL, 3, 700
+        DI 34
+        RETI
+      OpenPosArrived4:
+        SAP 0, 4, openPosition    //set Target position
+        SAP 1, 4, openPosition    //set Actual position
+		MVP REL, 4, 700
+        DI 36
+        RETI
+      OpenPosArrived5:
+        SAP 0, 5, openPosition    //set Target position
+        SAP 1, 5, openPosition    //set Actual position
+		MVP REL, 5, 700
+        DI 38
+        RETI
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Close:
+  SAPX 15, 200
+  SAPX 16, 235
+  CSUB Sub_Unlock
+
+  //CALC LOAD, -2800           // for go back more after 0
+  CALC LOAD, 0
+  //WAIT TICKS, 0, 50
+  MVPXA ABS
+  SGP nextAction, 2, 7
+  JA SetNextAction
+
+// not used
+CloseBySwitch:
+  SAPX 15, 200
+  SAPX 16, 235
+  CSUB Sub_Unlock
+
+  //CALC LOAD, -2800           // for go back more after 0
+  CALC LOAD, 0
+  //WAIT TICKS, 0, 50
+  // MVPXA ABS
+  CALCXV LOAD, curDoor
+  CALC LOAD, -999999              // load the speed and turn
+  //ROLXA
+  MVPXA REL
+
+  // set interrupt : begin
+  GGP curDoor, 2
+  COMP 0
+  JC EQ, CloseStop0
+  COMP 1
+  JC EQ, CloseStop1
+  COMP 2
+  JC EQ, CloseStop2
+  COMP 3
+  JC EQ, CloseStop3
+  COMP 4
+  JC EQ, CloseStop4
+  COMP 5
+  JC EQ, CloseStop5
+  CloseStopDone:
+
+  SGP nextAction, 2, 7
+  JA SetNextAction
+  
+  CloseStop0:
+    VECT 27, ClosePosArrived0
+    SGP 27, 3, 2   // set trigger logic
+    EI 27
+    EI 255
+    JA CloseStopDone
+    
+  CloseStop1:
+  CloseStop2:
+  CloseStop3:
+  CloseStop4:
+  CloseStop5:
+
+  ClosePosArrived0:
+    //GAPX 1
+    //AAPX 1
+    SAP 0, 0, 0    //set Target position
+    SAP 1, 0, 0    //set Actual position
+    DI 27
+    RETI
+
+ChkCloseDoorArrived:
+  // get the door target position
+  GAPX 0
+  CALCVA LOAD, targetPosition
+  // check the door arrived or not
+  GAPX 1   // get actual position
+  CALCVA COMP, targetPosition
+
+    // version 1
+    //JC EQ, Set_DoorClosed
+    // version 2
+    JC EQ, ChkCloseDoorAligned
+    
+    JA ActionDone
+
+  // check aligned by the sensor
+  ChkCloseDoorAligned:
+    GGP curDoor, 2
+    //GAPX 10
+    // check left switch
+    WAIT TICKS, 0, 50
+    GAPX 11
+    // COMP 1 , limit switch: 1, SAP bean switch: 0
+    COMP 0 // v0: COMP 1
+    JC EQ, Set_DoorClosed
+    SGP nextAction, 2, 3
+    JA SetNextAction
+
+  Set_DoorClosed:
+    // return to 0
+    //CALC LOAD, 0
+    //MVPXA ABS
+    
+    //WAIT TICKS, 0, 30
+    
+    // chkBeforeRelease
+    CSUB Sub_Lock
+    //SGP nextAction, 2, 9
+    SGP nextAction, 2, 12
+    JA SetNextAction
+
+ByPassSearchHome:
+    SGP nextAction, 2, 9
+    JA SetNextAction
+
+SearchHome:
+    // SAP version
+    //GAPX 11
+    //COMP 0 // v0: COMP 1
+    //JC EQ, ByPassSearchHome
+
+  // set stall variable to 0 to avoid infinte loop to repeat do homing search
+  //SGP 1, 2, 0
+  MSTX
+  CSUB Sub_ResetStall
+  CSUB Sub_Unlock
+
+  WAIT TICKS, 0, 10
+  //ROR 0, 10000
+  
+  CSUB Sub_RefSearch
+  
+  // replaced by RFS 
+  //CALC LOAD, SearchVelocity
+  //ROLXA
+
+  // if the speed is low ( i.e. 10000 ), then the stall guard cannot detect the stall, but will get more accurate positioning
+  //ROL 0, vmax
+
+  SGP nextAction, 2, 8
+  JA SetNextAction
+  
+Sub_RefSearch:
+  GGP curDoor, 2
+  COMP 0
+  JC EQ, RefSearch0
+  COMP 1
+  JC EQ, RefSearch1
+  COMP 2
+  JC EQ, RefSearch2
+  COMP 3
+  JC EQ, RefSearch3
+  COMP 4
+  JC EQ, RefSearch4
+  COMP 5
+  JC EQ, RefSearch5
+  RefSearchDone:
+  RSUB
+
+  RefSearch0:
+    RFS STOP, 0
+    RFS START, 0
+    JA RefSearchDone
+  RefSearch1:
+    RFS STOP, 1
+    RFS START, 1
+    JA RefSearchDone
+  RefSearch2:
+    RFS STOP, 2
+    RFS START, 2
+    JA RefSearchDone
+  RefSearch3:
+    RFS STOP, 3
+    RFS START, 3
+    JA RefSearchDone
+  RefSearch4:
+    RFS STOP, 4
+    RFS START, 4
+    JA RefSearchDone
+  RefSearch5:
+    RFS STOP, 5
+    RFS START, 5
+    JA RefSearchDone
+  
+ChkSearchHomeArrived:
+
+  //GIO 0, 0
+
+  //GAPX 11     // Left limit switch state
+  //COMP 0
+  //JC EQ, AdjustHome
+  //JA ActionDone
+
+  GGP curDoor, 2
+  COMP 0
+  JC EQ, ChkRefSearch0
+  COMP 1
+  JC EQ, ChkRefSearch1
+  COMP 2
+  JC EQ, ChkRefSearch2
+  COMP 3
+  JC EQ, ChkRefSearch3
+  COMP 4
+  JC EQ, ChkRefSearch4
+  COMP 5
+  JC EQ, ChkRefSearch5
+  ChkRefSearchDone:
+  COMP 0
+  //JC EQ, AdjustHome
+  JC EQ, TouchSwitch
+  JA ActionDone
+  
+  //SGP nextAction, 2, 9
+  //JA SetNextAction
+
+  ChkRefSearch0:
+    RFS STATUS, 0
+    JA ChkRefSearchDone
+  ChkRefSearch1:
+    RFS STATUS, 1
+    JA ChkRefSearchDone
+  ChkRefSearch2:
+    RFS STATUS, 2
+    JA ChkRefSearchDone
+  ChkRefSearch3:
+    RFS STATUS, 3
+    JA ChkRefSearchDone
+  ChkRefSearch4:
+    RFS STATUS, 4
+    JA ChkRefSearchDone
+  ChkRefSearch5:
+    RFS STATUS, 5
+    JA ChkRefSearchDone
+
+  TouchSwitch:
+    // 6110 don't have this feature
+    //SAPX 15, 10000
+    //SAPX 16, 13500
+    //
+    MSTX
+    WAIT TICKS, 0, 50
+    SAPX 1, 0
+
+    //CALC LOAD, 72
+    //CALC LOAD, 1000
+	//CALC LOAD, -150
+	
+	  GGP curDoor, 2
+	  COMP 0
+	  JC EQ, CalcLoad0
+	  COMP 1
+	  JC EQ, CalcLoad1
+	  COMP 2
+	  JC EQ, CalcLoad2
+	  COMP 3
+	  JC EQ, CalcLoad3
+	  COMP 4
+	  JC EQ, CalcLoad4
+	  COMP 5
+	  JC EQ, CalcLoad5
+	  CalcLoadDone:
+	  
+    MVPXA ABS
+    SGP nextAction, 2, 4
+    JA SetNextAction
+	///////////////////////////////////////////////////////////////////////////////////
+
+	  CalcLoad0:
+	    CALC LOAD, 120
+		JA CalcLoadDone
+	  CalcLoad1:
+	    CALC LOAD, 120
+		JA CalcLoadDone
+	  CalcLoad2:
+	    CALC LOAD, 120
+		JA CalcLoadDone
+	  CalcLoad3:
+	    CALC LOAD, 130
+		JA CalcLoadDone
+	  CalcLoad4:
+	    CALC LOAD, 80
+		JA CalcLoadDone
+	  CalcLoad5:
+	    CALC LOAD, 80
+		JA CalcLoadDone
+
+  AdjustHome:
+    MSTX
+    WAIT TICKS, 0, 50
+    //ROL 0, 10000
+    
+    // set target positon to 0
+    SAPX 1, 0
+    
+    //MVP REL, 0, -1000
+    //MVP ABS, 0, -9200
+      
+    // "MVP ABS, 0, 12000" is for "ROL 0, 10000"
+    // -- delete version : individual_homing_adjust
+    //CALC LOAD, adjustPosition
+    // -- end version : individual_homing_adjust
+    
+    // -- add version : individual_homing_adjust
+    CALCXV LOAD, curDoor
+    CALCXV ADD, Adjust1Ref
+    GIV
+    CALCXV LOAD, curDoor
+    // -- end version : individual_homing_adjust
+    
+    MVPXA ABS
+    
+    // new version : don't wait and just see whether adjustment arrived at the next round, so commentted the following old version commands
+    SGP nextAction, 2, 4
+    JA SetNextAction
+   
+    // old version
+	// // bug here, the three parameter "0" mean only wait for first motor, not current motor "curDoor"
+    // // WAIT POS, 0, 0
+	//
+    // GGP curDoor, 2
+    // COMP 0
+    // JC EQ, WaitAdjust0
+    // COMP 1
+    // JC EQ, WaitAdjust1
+    // COMP 2
+    // JC EQ, WaitAdjust2
+    // COMP 3
+    // JC EQ, WaitAdjust3
+    // COMP 4
+    // JC EQ, WaitAdjust4
+    // COMP 5
+    // JC EQ, WaitAdjust5
+	//
+	// WaitAdjust0:
+	//  WAIT POS, 0, 0
+	//   JA WaitAdjustDone
+	// WaitAdjust1:
+	//   WAIT POS, 1, 0
+	//   JA WaitAdjustDone
+	// WaitAdjust2:
+	//  WAIT POS, 2, 0
+	//   JA WaitAdjustDone
+	// WaitAdjust3:
+	//   WAIT POS, 3, 0
+	//   JA WaitAdjustDone
+	// WaitAdjust4:
+	//   WAIT POS, 4, 0
+	//   JA WaitAdjustDone
+	// WaitAdjust5:
+	//   WAIT POS, 5, 0
+	//   JA WaitAdjustDone
+    //
+    // WaitAdjustDone:
+    // MSTX
+    // SAPX 1, 0                        //set home position
+    // //SAPX 209, 0                    //set Encoder position [µsteps]
+    //
+    // SGP nextAction, 2, 9
+    // JA SetNextAction
+    //  
+    // // not used
+    // //GGP 0, 2
+    // //COMP 1
+    // //JC EQ, Open
+    // //COMP 2
+    // //JC EQ, Close
+    // //COMP 3
+    // //WAIT TICKS, 0, 100
+    // //JA RestartLoop
+
+Lock:
+  SAPX 7, 255
+  SGP nextAction, 2, 9
+  JA SetNextAction
+
+SetNextAction:
+  CALCXV LOAD, curDoor
+  CALCAV LOAD, nextAction
+  AIV
+  JA ActionDone
+
+// get door status
+
+Sub_GetCurAction:
+  CALCXV LOAD, curDoor
+  GIV
+  CALCVA LOAD, curAction
+  RSUB
+
+/////////////////////////////////
+  
+Sub_SetStall:
+  CALCXV LOAD, curDoor
+  CALCXV ADD, Stall1Ref
+  SIV 1
+  CALCXV LOAD, curDoor
+  RSUB
+
+Sub_ResetStall:
+  CALCXV LOAD, curDoor
+  CALCXV ADD, Stall1Ref
+  SIV 0
+  CALCXV LOAD, curDoor
+  RSUB
+  
+Sub_GetStall:
+  CALCXV LOAD, curDoor
+  CALCXV ADD, Stall1Ref
+  GIV
+  CALCXV LOAD, curDoor
+  RSUB
+
+////////////////////////////////////////////////////////////////////////////////////
+OpenTumbler:
+  CALC LOAD, openPosition    // prepare open Position for google demo
+  MVPXA ABS
+
+  SGP nextAction, 2, 11
+  JA SetNextAction
+
+ChkOpenDoorArrivedForTumbler:
+  // get the door target position
+  GAPX 0
+  CALCVA LOAD, targetPosition
+  // check the door arrived or not
+  GAPX 1   // get actual position
+  //COMP openPosition
+  CALCVA COMP, targetPosition
+    JC EQ, ChkSensorForTumbler
+    JA ActionDone
+    
+  ChkSensorForTumbler:
+    // door : 1,2,3,4,5,6 map to physical IN : 1,2,3,5,6,7
+    GGP curDoor, 2
+    // check sensor
+    GAPX 10
+    COMP 1 // v0: COMP 0
+    JC EQ, ChkStallBeforeForTumbler
+    JA ActionDone
+
+    ChkStallBeforeForTumbler:
+      CSUB Sub_GetStall
+      COMP 0
+      JC EQ, CloseForTumbler
+      COMP 1
+      JC EQ, SearchHome
+
+CloseForTumbler:
+  CALC LOAD, 0           // set accumulator to 0
+  WAIT TICKS, 0, 300
+  MVPXA ABS
+
+  SGP nextAction, 2, 7
+  JA SetNextAction
+
+ChkDoorAlignment:
+  GGP curDoor, 2
+  // check sensor
+  GAPX 10
+  COMP 1 // v0: COMP 0
+  JC EQ, SearchHome
+  JA ActionDone
+  
+ChkSearchAdjustArrived:
+  GAPX 0
+  CALCVA LOAD, targetPosition
+  // check the door arrived or not
+  GAPX 1   // get actual position
+  CALCVA COMP, targetPosition
+    JC EQ, Set_DoorHome
+    JA ActionDone
+    
+    Set_DoorHome:
+	  MSTX
+      SAPX 1, 0                        //set home position
+	  
+      //CSUB Sub_Lock
+      //SGP nextAction, 2, 9
+
+      SGP nextAction, 2, 12
+      JA SetNextAction
+      
+ChkBeforeRelease:
+    // check switch & sensor process 1
+	WAIT TICKS, 0, 30
+    GAPX 11
+    COMP 1 //v0: COMP 0
+    JC EQ, HomeAgain
+
+    GGP curDoor, 2
+    COMP 0
+      JC EQ, ChkObjectInside0
+    COMP 1
+      JC EQ, ChkObjectInside1
+    COMP 2
+      JC EQ, ChkObjectInside2
+    COMP 3
+      JC EQ, ChkObjectInside3
+    COMP 4
+      JC EQ, ChkObjectInside4
+    COMP 5
+      JC EQ, ChkObjectInside5
+    ChkObjectInsideDone:
+    COMP 0
+    JC EQ, OpenAgain
+    
+    CSUB Sub_Lock
+    SGP nextAction, 2, 9
+    JA SetNextAction
+    
+    ChkObjectInside0:
+      GIO 1, 0
+      JA ChkObjectInsideDone
+    ChkObjectInside1:
+      GIO 2, 0
+      JA ChkObjectInsideDone
+    ChkObjectInside2:
+      GIO 3, 0
+      JA ChkObjectInsideDone
+    ChkObjectInside3:
+      GIO 5, 0
+      JA ChkObjectInsideDone
+    ChkObjectInside4:
+      GIO 6, 0
+      JA ChkObjectInsideDone
+    ChkObjectInside5:
+      GIO 7, 0
+      JA ChkObjectInsideDone
+      //
+   //  check switch process 2
+   HomeAgain:
+     SGP nextAction, 2, 3
+     JA SetNextAction
+     
+   OpenAgain:
+     SGP nextAction, 2, 1
+     JA SetNextAction
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+Sub_Unlock:
+  GGP curDoor, 2
+  COMP 0
+  JC EQ, Unlock0
+  COMP 1
+  JC EQ, Unlock1
+  COMP 2
+  JC EQ, Unlock2
+  COMP 3
+  JC EQ, Unlock3
+  COMP 4
+  JC EQ, Unlock4
+  COMP 5
+  JC EQ, Unlock5
+  UnlockDone:
+  // give enough time to let the solenoid to unlock before door moves
+  // but new version use parameter 15 and 16 to slow down the A1 and V1 in the begining of start
+  
+  // need give wait command for 6110
+  WAIT TICKS, 0, 50
+  RSUB
+
+  Unlock0:
+    SIO 1, 2, 1
+    JA UnlockDone
+  Unlock1:
+    SIO 2, 2, 1
+    JA UnlockDone
+  Unlock2:
+    SIO 3, 2, 1
+    JA UnlockDone
+  Unlock3:
+    SIO 5, 2, 1
+    JA UnlockDone
+  Unlock4:
+    SIO 6, 2, 1
+    JA UnlockDone
+  Unlock5:
+    SIO 7, 2, 1
+    JA UnlockDone
+
+Sub_Lock:
+  GGP curDoor, 2
+  COMP 0
+  JC EQ, Lock0
+  COMP 1
+  JC EQ, Lock1
+  COMP 2
+  JC EQ, Lock2
+  COMP 3
+  JC EQ, Lock3
+  COMP 4
+  JC EQ, Lock4
+  COMP 5
+  JC EQ, Lock5
+  LockDone:
+  RSUB
+
+  Lock0:
+    SIO 1, 2, 0
+    JA LockDone
+  Lock1:
+    SIO 2, 2, 0
+    JA LockDone
+  Lock2:
+    SIO 3, 2, 0
+    JA LockDone
+  Lock3:
+    SIO 5, 2, 0
+    JA LockDone
+  Lock4:
+    SIO 6, 2, 0
+    JA LockDone
+  Lock5:
+    SIO 7, 2, 0
+    JA LockDone
+
+////////////////////////////////////////////////////////////////////////////////////////// 
+Sub_GetCurSensor:
+    GGP curDoor, 2
+    COMP 0
+      JC EQ, GetCurSensor0
+    COMP 1
+      JC EQ, GetCurSensor1
+    COMP 2
+      JC EQ, GetCurSensor2
+    COMP 3
+      JC EQ, GetCurSensor3
+    COMP 4
+      JC EQ, GetCurSensor4
+    COMP 5
+      JC EQ, GetCurSensor5
+
+    GetCurSensor0:
+      GIO 1, 0
+      JA GetCurSensorDone
+    GetCurSensor1:
+      GIO 2, 0
+      JA GetCurSensorDone
+    GetCurSensor2:
+      GIO 3, 0
+      JA GetCurSensorDone
+    GetCurSensor3:
+      GIO 5, 0
+      JA GetCurSensorDone
+    GetCurSensor4:
+      GIO 6, 0
+      JA GetCurSensorDone
+    GetCurSensor5:
+      GIO 7, 0
+      JA GetCurSensorDone
+    GetCurSensorDone:
+RSUB
+
+Sub_ResetWaitCup:
+    GGP curDoor, 2
+    COMP 0
+      JC EQ, ResetWaitCup0
+    COMP 1
+      JC EQ, ResetWaitCup1
+    COMP 2
+      JC EQ, ResetWaitCup2
+    COMP 3
+      JC EQ, ResetWaitCup3
+    COMP 4
+      JC EQ, ResetWaitCup4
+    COMP 5
+      JC EQ, ResetWaitCup5
+
+    ResetWaitCup0:
+      SGP 130, 2, 0
+      RSUB
+    ResetWaitCup1:
+      SGP 131, 2, 0
+      RSUB
+    ResetWaitCup2:
+      SGP 132, 2, 0
+      RSUB
+    ResetWaitCup3:
+      SGP 133, 2, 0
+      RSUB
+    ResetWaitCup4:
+      SGP 134, 2, 0
+      RSUB
+    ResetWaitCup5:
+      SGP 135, 2, 0
+      RSUB
+RSUB
+
+Sub_SetWaitCup:
+    GGP curDoor, 2
+    COMP 0
+      JC EQ, SetWaitCup0
+    COMP 1
+      JC EQ, SetWaitCup1
+    COMP 2
+      JC EQ, SetWaitCup2
+    COMP 3
+      JC EQ, SetWaitCup3
+    COMP 4
+      JC EQ, SetWaitCup4
+    COMP 5
+      JC EQ, SetWaitCup5
+
+    SetWaitCup0:
+      SGP 130, 2, 1
+      RSUB
+    SetWaitCup1:
+      SGP 131, 2, 1
+      RSUB
+    SetWaitCup2:
+      SGP 132, 2, 1
+      RSUB
+    SetWaitCup3:
+      SGP 133, 2, 1
+      RSUB
+    SetWaitCup4:
+      SGP 134, 2, 1
+      RSUB
+    SetWaitCup5:
+      SGP 135, 2, 1
+      RSUB
+RSUB
+
+Sub_GetWaitCup:
+    GGP curDoor, 2
+    COMP 0
+      JC EQ, GetWaitCup0
+    COMP 1
+      JC EQ, GetWaitCup1
+    COMP 2
+      JC EQ, GetWaitCup2
+    COMP 3
+      JC EQ, GetWaitCup3
+    COMP 4
+      JC EQ, GetWaitCup4
+    COMP 5
+      JC EQ, GetWaitCup5
+
+    GetWaitCup0:
+      GGP 130, 2
+      RSUB
+    GetWaitCup1:
+      GGP 131, 2
+      RSUB
+    GetWaitCup2:
+      GGP 132, 2
+      RSUB
+    GetWaitCup3:
+      GGP 133, 2
+      RSUB
+    GetWaitCup4:
+      GGP 134, 2
+      RSUB
+    GetWaitCup5:
+      GGP 135, 2
+      RSUB
+RSUB
